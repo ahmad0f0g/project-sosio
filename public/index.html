@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TemuSini - Lost & Found Campus Platform</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-compass"></i> TemuSini
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" onclick="navTo('home')" class="active" id="nav-home">Home</a></li>
+            <li><a href="#" onclick="navTo('lost')" id="nav-lost">Barang Hilang</a></li>
+            <li><a href="#" onclick="navTo('found')" id="nav-found">Barang Ditemukan</a></li>
+        </ul>
+        <button class="btn-primary" onclick="navTo('report')">+ Lapor Barang</button>
+        
+        <div class="menu-toggle" onclick="alert('Menu Mobile belum aktif di demo ini')">
+            <i class="fa-solid fa-bars"></i>
+        </div>
+    </header>
+
+    <main>
+        <section id="home" class="section active">
+            <div class="hero">
+                <h1>Kehilangan sesuatu?<br>Atau menemukannya?</h1>
+                <p>Platform komunitas mahasiswa untuk menghubungkan barang yang hilang dengan pemiliknya di lingkungan kampus.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="navTo('report')">Lapor Barang</button>
+                    <button class="btn-outline" onclick="navTo('found')">Cari Barang</button>
+                </div>
+            </div>
+
+            <h2 class="section-title">Barang Terbaru</h2>
+            <div class="items-grid" id="recent-items-grid">
+                </div>
+        </section>
+
+        <section id="listing" class="section">
+            <h2 id="listing-title" class="section-title">Daftar Barang</h2>
+            
+            <div class="filter-bar">
+                <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cari barang (e.g. iPhone, Tas, Kunci)..." onkeyup="filterItems()">
+                </div>
+                <div class="categories">
+                    <span class="cat-pill active" onclick="setCategory('all', this)">Semua</span>
+                    <span class="cat-pill" onclick="setCategory('Elektronik', this)">Elektronik</span>
+                    <span class="cat-pill" onclick="setCategory('Tas', this)">Tas</span>
+                    <span class="cat-pill" onclick="setCategory('Aksesoris', this)">Aksesoris</span>
+                    <span class="cat-pill" onclick="setCategory('Dokumen', this)">Dokumen</span>
+                    <span class="cat-pill" onclick="setCategory('Lainnya', this)">Lainnya</span>
+                </div>
+            </div>
+
+            <div class="items-grid" id="listing-grid">
+                </div>
+        </section>
+
+        <section id="report" class="section">
+            <div class="form-container">
+                <h2 class="section-title">Formulir Pelaporan</h2>
+                
+                <div class="form-toggle">
+                    <div class="toggle-btn active" id="btn-lost" onclick="toggleReportType('lost')">Saya Kehilangan</div>
+                    <div class="toggle-btn" id="btn-found" onclick="toggleReportType('found')">Saya Menemukan</div>
+                </div>
+
+                <form onsubmit="handleReportSubmit(event)">
+                    <div class="form-group">
+                        <label>Nama Barang</label>
+                        <input type="text" id="input-title" class="form-control" placeholder="Contoh: Tas Ransel Navy" required>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="input-category" class="form-control">
+                                <option value="Elektronik">Elektronik</option>
+                                <option value="Tas">Tas</option>
+                                <option value="Aksesoris">Aksesoris</option>
+                                <option value="Dokumen">Dokumen</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal</label>
+                            <input type="date" id="input-date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Lokasi (Hilang/Ditemukan)</label>
+                        <input type="text" id="input-location" class="form-control" placeholder="Contoh: Gedung Anwar Musaddad" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Deskripsi</label>
+                        <textarea id="input-desc" class="form-control" placeholder="Jelaskan ciri-ciri barang secara detail..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Foto Barang (Opsional)</label>
+                        <div class="file-upload">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Foto
+                            <input type="file" id="input-image" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width">Kirim Laporan</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <div id="claimModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3>Klaim Barang</h3>
+            <p class="modal-subtitle">Anda akan menghubungi penemu barang ini.</p>
+            
+            <div class="modal-item-info">
+                <h4 id="modal-item-name">Nama Barang</h4>
+                <p>Ditemukan oleh: <span id="modal-finder">Nama</span></p>
+            </div>
+
+            <form onsubmit="handleClaimSubmit(event)">
+                <div class="form-group">
+                    <label>Nama Lengkap Anda</label>
+                    <input type="text" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Bukti Kepemilikan</label>
+                    <textarea class="form-control" placeholder="Sebutkan ciri khusus (misal: wallpaper HP, isi dompet)..." required></textarea>
+                </div>
+                <button type="submit" class="btn-primary full-width">Ajukan Klaim</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
