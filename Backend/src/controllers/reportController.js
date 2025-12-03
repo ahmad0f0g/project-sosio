@@ -1,32 +1,44 @@
 import Report from "../models/Report.js";
-import cloudinary from "../../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";// Pastikan path ini sesuai dengan struktur folder Anda
+
+// Helper function: Bungkus upload_stream dengan Promise agar bisa di-await
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "lostfound" },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
 
 // CREATE REPORT
 export const createReport = async (req, res) => {
   try {
     const { title, description, category, location } = req.body;
 
-    // Upload foto ke Cloudinary
+    // Array untuk menampung hasil upload
     let uploadedImages = [];
 
+    // Cek apakah ada file yang diupload
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const upload = await cloudinary.uploader.upload_stream(
-          { folder: "lostfound" },
-          (error, result) => {
-            if (error) throw error;
-            return result;
-          }
-        );
+      // Upload semua file secara paralel menggunakan Promise.all
+      const uploadPromises = req.files.map((file) => uploadToCloudinary(file.buffer));
+      
+      // Tunggu sampai semua upload selesai
+      const results = await Promise.all(uploadPromises);
 
-        // Karena menggunakan stream, harus manual push
-        uploadedImages.push({
-          url: upload.url,
-          public_id: upload.public_id,
-        });
-      }
+      // Map hasil upload ke format yang diinginkan
+      uploadedImages = results.map((img) => ({
+        url: img.secure_url, // Gunakan secure_url agar selalu HTTPS
+        public_id: img.public_id,
+      }));
     }
 
+    // Simpan ke database
     const report = await Report.create({
       title,
       description,
@@ -35,11 +47,12 @@ export const createReport = async (req, res) => {
       images: uploadedImages,
     });
 
-    res.json({
+    res.status(201).json({
       message: req.t("REPORT_CREATED"),
       data: report,
     });
   } catch (error) {
+    console.error("Create Report Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
