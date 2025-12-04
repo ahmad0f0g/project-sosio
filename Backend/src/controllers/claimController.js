@@ -4,12 +4,11 @@ import Report from "../models/Report.js";
 // CREATE CLAIM
 export const createClaim = async (req, res) => {
   try {
-    const { reportId, name, phone, reason } = req.body;
+    const { reportId, name, reason } = req.body;
 
     const claim = await Claim.create({
       reportId,
       name,
-      phone,
       reason,
     });
 

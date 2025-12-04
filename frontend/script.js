@@ -183,11 +183,12 @@ async function handleReportSubmit(e) {
     const date = document.getElementById('input-date').value;
     const location = document.getElementById('input-location').value.trim();
     const desc = document.getElementById('input-desc').value.trim();
+    const phone = document.getElementById('input-phone').value.trim();
     const imageInput = document.getElementById('input-image');
     const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
 
     // Simple validation
-    if (!title || !location || !date) {
+    if (!title || !location || !date || !phone) {
         alert('Mohon isi semua field wajib (Nama, Lokasi, Tanggal).');
         return;
     }
@@ -198,6 +199,7 @@ async function handleReportSubmit(e) {
     formData.append('category', category);
     formData.append('date', date);
     formData.append('location', location);
+    formData.append('phone', phone);
     formData.append('description', desc);
     formData.append('type', reportTypeVal); // backend expects "category" or "type" depending on impl
 
@@ -269,12 +271,16 @@ window.onclick = function(event) {
 
 async function handleClaimSubmit(e) {
     e.preventDefault();
-    // Grab fields inside modal (first two inputs)
-    const modal = document.getElementById('claimModal');
-    const inputs = modal.querySelectorAll('input, textarea');
-    const name = (inputs[0]?.value || '').trim();
-    const proof = (inputs[1]?.value || '').trim();
 
+    // 1. Ambil nilai dari input berdasarkan ID yang baru kita buat
+    const nameInput = document.getElementById('claim-name');
+    const proofInput = document.getElementById('claim-proof');
+
+    // Pastikan elemen ditemukan sebelum mengambil value (untuk menghindari error)
+    const name = nameInput ? nameInput.value.trim() : '';
+    const proof = proofInput ? proofInput.value.trim() : '';
+
+    // 2. Validasi: Pastikan semua data terisi
     if (!name || !proof) {
         alert('Mohon isi nama dan bukti kepemilikan.');
         return;
@@ -286,16 +292,17 @@ async function handleClaimSubmit(e) {
     }
 
     try {
+        // 3. Kirim data ke Backend
         const res = await fetch(`${API_BASE}/claims`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 ...defaultHeaders
             },
+            // Perhatikan field 'phone' sekarang dikirim
             body: JSON.stringify({
                 reportId: currentClaimingId,
-                name,
-                phone: '', // optional — you can add input
+                name: name,
                 reason: proof
             })
         });
@@ -304,7 +311,7 @@ async function handleClaimSubmit(e) {
             const json = await res.json();
             alert(json.message || 'Klaim berhasil dikirim.');
             closeModal();
-            // optional: refresh claims list or item status
+            // Refresh halaman agar update terlihat
             fetchAndRenderListing();
         } else {
             const err = await res.json().catch(()=>({message: res.statusText}));
