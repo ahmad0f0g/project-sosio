@@ -176,20 +176,50 @@ async function fetchAndRenderListing() {
 /* ----------------------
    FORM: Create Report (uses FormData, uploads file to backend)
    ---------------------- */
+
 async function handleReportSubmit(e) {
     e.preventDefault();
+    
+    // Tentukan suffix ID input berdasarkan tipe laporan ('lost' atau 'found')
+    const typeSuffix = reportTypeVal === 'lost' ? '-lost' : '-found';
+
+    // Ambil nilai dasar
     const title = document.getElementById('input-title').value.trim();
-    const category = document.getElementById('input-category').value;
-    const date = document.getElementById('input-date').value;
-    const location = document.getElementById('input-location').value.trim();
-    const desc = document.getElementById('input-desc').value.trim();
-    const phone = document.getElementById('input-phone').value.trim();
+    // Gunakan suffix untuk mengambil input yang benar
+    const category = document.getElementById('input-category' + typeSuffix).value;
+    const date = document.getElementById('input-date' + typeSuffix).value;
+    const location = document.getElementById('input-location' + typeSuffix).value.trim();
+    const desc = document.getElementById('input-desc' + typeSuffix).value.trim();
+    const phone = document.getElementById('input-phone' + typeSuffix).value.trim();
+    const reporter = document.getElementById('input-reporter').value.trim();
+
     const imageInput = document.getElementById('input-image');
     const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
 
-    // Simple validation
-    if (!title || !location || !date || !phone) {
-        alert('Mohon isi semua field wajib (Nama, Lokasi, Tanggal).');
+    // Tambahan untuk laporan 'found' (5 Ciri Rahasia)
+    let secret1 = '';
+    let secret2 = '';
+    let secret3 = '';
+    let secret4 = '';
+    let secret5 = '';
+
+    if (reportTypeVal === 'found') {
+        secret1 = document.getElementById('input-secret-1').value.trim();
+        secret2 = document.getElementById('input-secret-2').value.trim();
+        secret3 = document.getElementById('input-secret-3').value.trim();
+        secret4 = document.getElementById('input-secret-4').value.trim();
+        secret5 = document.getElementById('input-secret-5').value.trim();
+        
+        // Validasi khusus untuk 2 ciri rahasia wajib di laporan 'found'
+        if (!secret1 || !secret2) {
+             alert('Mohon isi Ciri Rahasia 1 dan 2 untuk verifikasi klaim.');
+             return;
+        }
+    }
+
+    // Simple validation wajib
+    if (!title || !location || !date || !phone || !reporter) {
+        alert('Mohon isi semua field wajib (Nama Barang, Lokasi, Tanggal, dan Kontak Anda).');
         return;
     }
 
@@ -200,15 +230,26 @@ async function handleReportSubmit(e) {
     formData.append('date', date);
     formData.append('location', location);
     formData.append('phone', phone);
+    formData.append('reporter', reporter);
     formData.append('description', desc);
-    formData.append('type', reportTypeVal); // backend expects "category" or "type" depending on impl
+    formData.append('type', reportTypeVal);
 
-    // Backend in file routes expects images[] (upload.array("images",3))
+    // Tambahkan 5 ciri rahasia HANYA jika tipenya 'found'
+    if (reportTypeVal === 'found') {
+        // Asumsi backend Anda memiliki field untuk menyimpan rahasia ini
+        formData.append('secret1', secret1);
+        formData.append('secret2', secret2);
+        formData.append('secret3', secret3);
+        formData.append('secret4', secret4);
+        formData.append('secret5', secret5);
+    }
+
     if (file) {
         formData.append('images', file); // name 'images' to match backend middleware
     }
 
     try {
+        // ... (sisanya sama dengan fungsi handleReportSubmit asli)
         const res = await fetch(`${API_BASE}/reports`, {
             method: 'POST',
             headers: {
@@ -330,6 +371,30 @@ function toggleReportType(type) {
     reportTypeVal = type;
     document.getElementById('btn-lost').classList.toggle('active', type === 'lost');
     document.getElementById('btn-found').classList.toggle('active', type === 'found');
+    
+    const lostFields = document.getElementById('lost-form-fields');
+    const foundFields = document.getElementById('found-form-fields');
+    
+    // Logika untuk mengubah visibilitas bagian formulir
+    if (type === 'lost') {
+        // Tampilkan formulir Kehilangan
+        lostFields.classList.add('active-fields');
+        lostFields.classList.remove('hidden-fields');
+        lostFields.style.display = 'block';
+        // Sembunyikan formulir Ditemukan (termasuk 5 pertanyaan rahasia)
+        foundFields.classList.remove('active-fields');
+        foundFields.classList.add('hidden-fields');
+        foundFields.style.display = 'none';
+    } else { // type === 'found'
+        // Sembunyikan formulir Kehilangan
+        lostFields.classList.remove('active-fields');
+        lostFields.classList.add('hidden-fields');
+        lostFields.style.display = 'none';
+        // Tampilkan formulir Ditemukan
+        foundFields.classList.add('active-fields');
+        foundFields.classList.remove('hidden-fields');
+        foundFields.style.display = 'block';
+    }
 }
 
 function escapeHtml(str = '') {

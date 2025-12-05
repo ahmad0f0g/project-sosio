@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TemuSini - Lost & Found Campus Platform</title>
+    <title>TemUIN - Lost & Found Campus Platform</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
 
     <header>
         <div class="logo">
-            <i class="fa-solid fa-compass"></i> TemuSGD
+            <i class="fa-solid fa-compass"></i> TemUIN
         </div>
         <ul class="nav-links">
             <li><a href="#" onclick="navTo('home')" class="active" id="nav-home">Home</a></li>
@@ -67,63 +67,128 @@
         </section>
 
         <section id="report" class="section">
-            <div class="form-container">
-                <h2 class="section-title">Formulir Pelaporan</h2>
+    <div class="form-container">
+        <h2 class="section-title">Formulir Pelaporan</h2>
+        
+        <div class="form-toggle">
+            <div class="toggle-btn active" id="btn-lost" onclick="toggleReportType('lost')">Saya Kehilangan</div>
+            <div class="toggle-btn" id="btn-found" onclick="toggleReportType('found')">Saya Menemukan</div>
+        </div>
+
+        <form onsubmit="handleReportSubmit(event)" id="report-form"> 
+            
+            <div class="form-group">
+                <label>Nama Barang</label>
+                <input type="text" id="input-title" class="form-control" placeholder="Contoh: Tas Ransel Navy" required>
+            </div>
+            
+            <div class="NameReporter form-group">
+                <div class="form-group">
+                    <label id="reporter-label">Nama Anda </label> 
+                    <input type="text" id="input-reporter" class="form-control" placeholder="Contoh: Budi Santoso" required>
+                </div>
+            </div>
+            
+            <div id="lost-form-fields" class="form-type active-fields">
                 
-                <div class="form-toggle">
-                    <div class="toggle-btn active" id="btn-lost" onclick="toggleReportType('lost')">Saya Kehilangan</div>
-                    <div class="toggle-btn" id="btn-found" onclick="toggleReportType('found')">Saya Menemukan</div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Kategori Barang Hilang</label>
+                        <select id="input-category-lost" class="form-control">
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Aksesoris">Aksesoris</option>
+                            <option value="Buku">Buku</option>
+                            <option value="Pakaian">Pakaian</option>
+                            </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nomor WhatsApp Anda</label>
+                        <input type="tel" id="input-phone-lost" class="form-control" placeholder="08xxxxxxxx" required>
+                    </div>  
+                    <div class="form-group">
+                        <label>Tanggal Hilang</label>
+                        <input type="date" id="input-date-lost" class="form-control" required>
+                    </div>
                 </div>
 
-                <form onsubmit="handleReportSubmit(event)">
-                    <div class="form-group">
-                        <label>Nama Barang</label>
-                        <input type="text" id="input-title" class="form-control" placeholder="Contoh: Tas Ransel Navy" required>
-                    </div>
-                    
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Kategori</label>
-                            <select id="input-category" class="form-control">
-                                <option value="Elektronik">Elektronik</option>
-                                <option value="Tas">Tas</option>
-                                <option value="Aksesoris">Aksesoris</option>
-                                <option value="Dokumen">Dokumen</option>
-                                <option value="Lainnya">Lainnya</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Nomor WhatsApp (Untuk Dihubungi)</label>
-                            <input type="tel" id="input-phone" class="form-control" placeholder="08xxxxxxxx" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Tanggal</label>
-                            <input type="date" id="input-date" class="form-control" required>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label>Lokasi Terakhir Melihat</label>
+                    <input type="text" id="input-location-lost" class="form-control" placeholder="Contoh: Gedung Anwar Musaddad" required>
+                </div>
 
-                    <div class="form-group">
-                        <label>Lokasi (Hilang/Ditemukan)</label>
-                        <input type="text" id="input-location" class="form-control" placeholder="Contoh: Gedung Anwar Musaddad" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Deskripsi</label>
-                        <textarea id="input-desc" class="form-control" placeholder="Jelaskan ciri-ciri barang secara detail..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Foto Barang (Opsional)</label>
-                        <div class="file-upload">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Foto
-                            <input type="file" id="input-image" class="form-control" accept="image/*">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-primary full-width">Kirim Laporan</button>
-                </form>
+                <div class="form-group">
+                    <label>Deskripsi Ciri-ciri Barang Hilang</label>
+                    <textarea id="input-desc-lost" class="form-control" placeholder="Jelaskan ciri-ciri barang secara detail..."></textarea>
+                </div>
             </div>
-        </section>
+            <div id="found-form-fields" class="form-type hidden-fields">
+                
+                 <div class="grid-2">
+                    <div class="form-group">
+                        <label>Kategori Barang Ditemukan</label>
+                        <select id="input-category-found" class="form-control">
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Aksesoris">Aksesoris</option>
+                            <option value="Buku">Buku</option>
+                            <option value="Pakaian">Pakaian</option>
+                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nomor WhatsApp Anda (Penemu)</label>
+                        <input type="tel" id="input-phone-found" class="form-control" placeholder="08xxxxxxxx" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Ditemukan</label>
+                        <input type="date" id="input-date-found" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Lokasi Ditemukan</label>
+                    <input type="text" id="input-location-found" class="form-control" placeholder="Contoh: Masjid UIN SGD Bandung" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Deskripsi Barang Ditemukan</label>
+                    <textarea id="input-desc-found" class="form-control" placeholder="Jelaskan ciri-ciri umum barang yang Anda temukan..."></textarea>
+                </div>
+                
+                <div class="verification-fields">
+                    <h4 style="margin-top: 20px;">🔑 5 Pertanyaan Rahasia untuk Verifikasi Klaim</h4>
+                    <p class="text-secondary">Informasi ini tidak akan ditampilkan kepada publik dan hanya akan digunakan oleh penemu untuk memastikan barang diklaim oleh pemilik yang benar.</p>
+
+                    <div class="form-group">
+                        <label>Ciri Rahasia 1 </label>
+                        <input type="text" id="input-secret-1" class="form-control" placeholder="Contoh: Isi dompet, Wallpaper HP, atau Ciri fisik yang tidak terlihat dari luar." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciri Rahasia 2 </label>
+                        <input type="text" id="input-secret-2" class="form-control" placeholder="Contoh: Ciri fisik yang tidak terlihat dari luar atau Kondisi baterai." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciri Rahasia 3 </label>
+                        <input type="text" id="input-secret-3" class="form-control" placeholder="Contoh: Jumlah uang di dalam dompet atau kode sandi tertentu.">
+                    </div>
+                    
+                </div>
+                
+            </div>
+            <div class="form-group">
+                <label>Foto Barang (Opsional)</label>
+                <div class="file-upload">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload Foto
+                    <input type="file" id="input-image" class="form-control" accept="image/*">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary full-width">Kirim Laporan</button>
+        </form>
+    </div>
+</section>
     </main>
 
     <div id="claimModal" class="modal">
@@ -140,11 +205,22 @@
             <form onsubmit="handleClaimSubmit(event)">
                 <div class="form-group">
                     <label>Nama Lengkap Anda</label>
-                    <input type="text" class="form-control" required>
+                    <input type="text" id="claim-name" class="form-control" required>
                 </div>
+                
                 <div class="form-group">
-                    <label>Bukti Kepemilikan</label>
-                    <textarea class="form-control" placeholder="Sebutkan ciri khusus (misal: wallpaper HP, isi dompet)..." required></textarea>
+                    <label>Jawaban Ciri Rahasia 1 (Wajib)</label>
+                    <textarea id="claim-secret-1" class="form-control" placeholder="Sebutkan ciri khusus barang yang hanya diketahui pemilik (Contoh: Isi dompet, Wallpaper HP)..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Jawaban Ciri Rahasia 2 (Wajib)</label>
+                    <textarea id="claim-secret-2" class="form-control" placeholder="Sebutkan ciri khusus barang kedua." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Jawaban Ciri Rahasia 3 (Opsional)</label>
+                    <textarea id="claim-secret-3" class="form-control" placeholder="Jawaban untuk ciri rahasia tambahan 1."></textarea>
                 </div>
                 <button type="submit" class="btn-primary full-width">Ajukan Klaim</button>
             </form>
