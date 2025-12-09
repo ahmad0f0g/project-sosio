@@ -196,6 +196,23 @@
             </form>
         </div>
     </div>
+
+    <div id="checkClaimModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeCheckClaimModal()">&times;</span>
+            <h3>Cek Status Klaim & Dapatkan Kontak</h3>
+            <p class="modal-subtitle">Silakan masukkan **ID Laporan** atau **Token Klaim** Anda yang didapatkan setelah mengajukan klaim untuk melihat status verifikasi dan mendapatkan nomor kontak penemu.</p>
+            
+            <form onsubmit="handleCheckClaimSubmit(event)">
+                <div class="form-group">
+                    <label>ID Laporan / Token Klaim</label>
+                    <input type="text" id="input-claim-id-check" class="form-control" placeholder="Masukkan ID di sini (contoh: 66a6a2a...) atau Token" required>
+                </div>
+                
+                <button type="submit" class="btn-primary full-width">Cek Status & Dapatkan Kontak</button>
+            </form>
+        </div>
+    </div>
     <script>window.API_BASE = "https://project-sosio.vercel.app/api";</script>
     <script src="script.js"></script>
 </body>
