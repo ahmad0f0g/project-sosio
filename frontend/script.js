@@ -322,10 +322,11 @@ async function handleClaimSubmit(e) {
             // LOGIKA BARU: Memberi tahu pengguna untuk CEK DI MENU BARU
             let message = json.message || 'Klaim berhasil diajukan.';
             
-            if (json.isVerified) {
-                message = '🎉 Klaim Berhasil Diverifikasi! Silakan gunakan menu "Cek Klaim Saya" untuk mendapatkan nomor WhatsApp penemu.';
+            if (json.claimToken) {
+                // Tampilkan TOKEN dengan jelas agar user menyalinnya
+                alert(`✅ KLAIM BERHASIL DIAJUKAN!\n\nMohon CATAT/SCREENSHOT Token ini untuk cek status:\n👉 ${json.claimToken}\n\n(Gunakan token ini di menu 'Cek Klaim Saya')`);
             } else {
-                message += ' Menunggu konfirmasi verifikasi atau silakan cek status klaim Anda secara berkala.';
+                alert(json.message || 'Klaim berhasil diajukan.');
             }
             
             alert(message);
