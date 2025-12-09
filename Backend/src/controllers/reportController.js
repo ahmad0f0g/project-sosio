@@ -1,4 +1,5 @@
 import Report from "../models/Report.js";
+import Claim from "../models/Claim.js";
 import cloudinary from "../config/cloudinary.js"; 
 
 // Helper: Upload buffer ke Cloudinary (Wajib untuk Vercel)
@@ -99,6 +100,31 @@ export const getReportById = async (req, res) => {
     const report = await Report.findById(req.params.id).select('-secrets');
     if (!report) return res.status(404).json({ message: req.t("REPORT_NOT_FOUND") });
     res.json({ data: report });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteReport = async (req, res) => {
+  try {
+    // 1. Cek Otorisasi Admin (Sama seperti di adminController)
+    if (req.headers.authorization !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ message: "Unauthorized: Password Admin Salah" });
+    }
+
+    const { id } = req.params;
+    
+    // 2. Cari dan Hapus Report
+    const report = await Report.findByIdAndDelete(id);
+
+    if (!report) {
+      return res.status(404).json({ message: "Laporan tidak ditemukan." });
+    }
+
+    await Claim.deleteMany({ reportId: id });
+    
+    res.json({ message: "Postingan berhasil dihapus permanen." });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
