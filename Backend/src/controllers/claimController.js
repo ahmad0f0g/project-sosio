@@ -4,7 +4,9 @@ import Report from "../models/Report.js";
 export const createClaim = async (req, res) => {
   try {
     // Frontend mengirim JSON: { answers: { secret1: "...", ... } }
-    const { reportId, name, reason, answers } = req.body;
+    const { reportId, name, reason, answers, pin } = req.body;
+
+    if(!pin) return res.status(400).json({message: "Wajib membuat PIN keamanan!"});
 
     const report = await Report.findById(reportId);
     if (!report) return res.status(404).json({ message: "Barang tidak ditemukan." });
@@ -17,6 +19,7 @@ export const createClaim = async (req, res) => {
       reportId,
       name,
       reason,
+      pin,
       // Mapping jawaban penebak
       answers: {
         answer1: answers?.secret1 || "-",
@@ -43,12 +46,20 @@ export const createClaim = async (req, res) => {
 export const getClaimStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const { pin } = req.query;
 
     // Cari klaim dan ambil data report terkait (termasuk phone)
     const claim = await Claim.findById(id).populate("reportId", "phone finderName title");
 
     if (!claim) {
       return res.status(404).json({ message: "Data klaim tidak ditemukan." });
+    }
+
+    if (claim.pin !== pin) {
+        return res.status(403).json({ 
+            status: "forbidden", 
+            message: "PIN Salah! Anda tidak berhak melihat data ini." 
+        });
     }
 
     // LOGIKA PENTING: Hanya kirim No HP jika status APPROVED
