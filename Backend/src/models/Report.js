@@ -17,8 +17,8 @@ const reportSchema = new mongoose.Schema(
     
     status: { 
         type: String, 
-        enum: ["pending", "claimed", "finished"], 
-        default: "pending" 
+        enum: ["pending", "unclaimed", "claimed", "finished"], 
+        default: "unclaimed" 
     },
     claimCount: { type: Number, default: 0 },
 

@@ -48,7 +48,7 @@ export const createReport = async (req, res) => {
       images: uploadedImages,
       finderName: reporter, 
       dateFound: date,
-      status: 'pending',
+      status: 'unclaimed',
       
       // Mapping Kunci Jawaban
       secrets: {
