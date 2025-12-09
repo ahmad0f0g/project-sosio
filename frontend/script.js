@@ -208,7 +208,7 @@ async function handleReportSubmit(e) {
     const imageInput = document.getElementById('input-image');
     const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
 
-    // --- PERBAIKAN DI SINI (Hanya ambil 3 Secret) ---
+    // Ambil 3 Secret
     const secret1 = document.getElementById('input-secret-1').value.trim();
     const secret2 = document.getElementById('input-secret-2').value.trim();
     const secret3 = document.getElementById('input-secret-3').value.trim();
@@ -240,14 +240,13 @@ async function handleReportSubmit(e) {
 
     if (file) { formData.append('images', file); }
 
-    // ... (Sisa kode fetch sama seperti sebelumnya) ...
     try {
         const res = await fetch(`${API_BASE}/reports`, {
             method: 'POST',
             headers: { 'Accept-Language': defaultLang },
             body: formData
         });
-        // ... (lanjutan handling response)
+        
         if (res.ok) {
              const json = await res.json();
              alert(json.message || 'Laporan berhasil dibuat.');
@@ -289,7 +288,6 @@ async function handleClaimSubmit(e) {
     e.preventDefault();
 
     const nameInput = document.getElementById('claim-name');
-    // --- PERBAIKAN: Ambil ID yang benar dari HTML Modal ---
     const ans1Input = document.getElementById('claim-secret-1');
     const ans2Input = document.getElementById('claim-secret-2');
     const ans3Input = document.getElementById('claim-secret-3');
@@ -316,11 +314,10 @@ async function handleClaimSubmit(e) {
                 'Content-Type': 'application/json',
                 ...defaultHeaders
             },
-            // --- PERBAIKAN: Kirim sebagai object 'answers' ---
             body: JSON.stringify({
                 reportId: currentClaimingId,
                 name: name,
-                reason: "Verifikasi Ciri Rahasia", // Default reason
+                reason: "Verifikasi Ciri Rahasia", 
                 answers: {
                     secret1: ans1,
                     secret2: ans2,
@@ -331,42 +328,20 @@ async function handleClaimSubmit(e) {
 
         if (res.ok) {
             const json = await res.json();
-
-            // =======================================================
-            // 🔥 PERBAIKAN LOGIKA TAMPILKAN WHATSAPP PENEMU DI SINI
-            // =======================================================
-            // Asumsi API mengembalikan { isVerified: true, finderPhone: "628xxx", finderName: "Budi" }
-            if (json.isVerified && json.finderPhone) {
-                // Formatting nomor (optional, tapi disarankan)
-                let phone = json.finderPhone;
-                // Bersihkan dan pastikan format internasional (tanpa '+')
-                const cleanPhone = phone.replace(/[^0-9]/g, '');
-                
-                // Jika dimulai dengan '62', tampilkan dengan '0' di alert
-                if (cleanPhone.startsWith('62')) {
-                    phone = '0' + cleanPhone.substring(2); 
-                } else if (cleanPhone.startsWith('8')) {
-                    phone = '0' + cleanPhone; 
-                } else {
-                    phone = cleanPhone;
-                }
-                
-                // 1. Tampilkan Alert Kontak
-                alert(`🎉 Klaim Barang Berhasil Dikonfirmasi! Silakan hubungi ${json.finderName || 'Penemu'} di nomor WhatsApp berikut untuk pengambilan: ${phone}`);
-                
-                // 2. Buka Link WhatsApp secara langsung
-                window.open(`https://wa.me/${cleanPhone}`, '_blank');
-                
+            
+            // 🔥 LOGIKA BARU: HANYA MEMBERITAHU PENGGUNA UNTUK CEK DI MENU BARU
+            let message = json.message || 'Klaim berhasil diajukan.';
+            
+            if (json.isVerified) {
+                message = '🎉 Klaim Berhasil Diverifikasi! Silakan gunakan menu "Cek Klaim Saya" untuk mendapatkan nomor WhatsApp penemu.';
             } else {
-                // Klaim berhasil diajukan, tapi belum tentu diverifikasi langsung (tergantung backend)
-                 alert(json.message || 'Klaim berhasil diajukan. Menunggu konfirmasi verifikasi dari penemu.');
+                message += ' Menunggu konfirmasi verifikasi atau silakan cek status klaim Anda secara berkala.';
             }
-            // =======================================================
-            // 🔥 AKHIR PERBAIKAN
-            // =======================================================
+            
+            alert(message);
+            // 🔥 AKHIR LOGIKA BARU
 
             closeModal();
-            // Refresh daftar agar status item mungkin berubah
             fetchAndRenderListing();
         } else {
             const err = await res.json().catch(()=>({message: res.statusText}));
@@ -380,6 +355,62 @@ async function handleClaimSubmit(e) {
 
 
 /* ----------------------
+   NEW: CHECK CLAIMS STATUS
+   ---------------------- */
+
+async function checkMyClaimsStatus() {
+    // Meminta ID Laporan atau Token Klaim
+    const claimId = prompt("Masukkan ID Laporan (Report ID) atau Token Klaim Anda untuk cek status dan mendapatkan kontak penemu:");
+    
+    if (!claimId || claimId.trim() === "") {
+        return alert("Cek status klaim dibatalkan.");
+    }
+    
+    // Asumsi endpoint API adalah /claims/check?id=...
+    try {
+        const res = await fetch(`${API_BASE}/claims/check?id=${encodeURIComponent(claimId.trim())}`, {
+            method: 'GET',
+            headers: defaultHeaders
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            
+            // Asumsi API mengembalikan { status: "confirmed", finderPhone: "628xxx", finderName: "Budi" }
+            if (json.status === 'confirmed' && json.finderPhone) {
+                // Logika penampilan dan formatting kontak
+                let phone = json.finderPhone;
+                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                
+                if (cleanPhone.startsWith('62')) {
+                    phone = '0' + cleanPhone.substring(2); 
+                } else if (cleanPhone.startsWith('8')) {
+                    phone = '0' + cleanPhone; 
+                } else {
+                    phone = cleanPhone;
+                }
+                
+                // Tampilkan Kontak
+                alert(`🎉 Klaim Dikonfirmasi! Silakan hubungi ${json.finderName || 'Penemu'} di nomor WhatsApp berikut untuk pengambilan: ${phone}`);
+                
+                // Buka Link WhatsApp
+                window.open(`https://wa.me/${cleanPhone}`, '_blank');
+                
+            } else {
+                alert(json.message || `Status Klaim: ${json.status || 'Pending'}. Silakan coba lagi nanti.`);
+            }
+        } else {
+            const err = await res.json().catch(()=>({message: res.statusText}));
+            alert('Gagal cek status klaim: ' + (err.message || res.statusText));
+        }
+    } catch (err) {
+        console.error('Error checking claim status', err);
+        alert('Gagal cek status klaim (network error).');
+    }
+}
+
+
+/* ----------------------
    HELPERS
    ---------------------- */
 function toggleReportType(type) {
@@ -388,7 +419,6 @@ function toggleReportType(type) {
 
     reportTypeVal = 'found'; // Tetapkan sebagai 'found'
 
-    // Asumsi tombol 'lost' sudah dihapus di HTML, hanya tombol 'found' yang relevan
     const btnFound = document.getElementById('btn-found');
     if (btnFound) btnFound.classList.add('active'); 
     
@@ -431,3 +461,6 @@ window.handleClaimSubmit = handleClaimSubmit;
 window.setCategory = setCategory;
 window.filterItems = filterItems;
 window.toggleMobileMenu = toggleMobileMenu;
+
+// Daftarkan fungsi baru
+window.checkMyClaimsStatus = checkMyClaimsStatus;
