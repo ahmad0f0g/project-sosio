@@ -5,5 +5,6 @@ const router = express.Router();
 
 // Create claim
 router.post("/", createClaim);
+router.get("/status/:id", getClaimStatus); // <--- Tambahkan baris ini
 
 export default router;

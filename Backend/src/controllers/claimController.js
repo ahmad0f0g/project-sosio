@@ -36,3 +36,45 @@ export const createClaim = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ... (kode createClaim yang sudah ada)
+
+// GET CLAIM STATUS (Cek status klaim public)
+export const getClaimStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Cari klaim dan ambil data report terkait (termasuk phone)
+    const claim = await Claim.findById(id).populate("reportId", "phone finderName title");
+
+    if (!claim) {
+      return res.status(404).json({ message: "Data klaim tidak ditemukan." });
+    }
+
+    // LOGIKA PENTING: Hanya kirim No HP jika status APPROVED
+    if (claim.status === "approved") {
+      res.json({
+        status: "approved",
+        itemTitle: claim.reportId.title,
+        finderName: claim.reportId.finderName,
+        contactPhone: claim.reportId.phone, // INI YANG DICARI
+        message: "Selamat! Klaim disetujui. Silakan hubungi penemu."
+      });
+    } else if (claim.status === "rejected") {
+      res.json({
+        status: "rejected",
+        itemTitle: claim.reportId.title,
+        message: "Maaf, klaim Anda ditolak karena jawaban tidak sesuai."
+      });
+    } else {
+      res.json({
+        status: "pending",
+        itemTitle: claim.reportId.title,
+        message: "Klaim masih menunggu verifikasi admin."
+      });
+    }
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
