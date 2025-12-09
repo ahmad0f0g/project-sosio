@@ -3,116 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - TemuSini</title>
+    <title>Admin Dashboard - TemUIN</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f1f5f9; padding: 2rem; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; padding: 2rem; color: #0f172a; }
+        .container { max-width: 1100px; margin: 0 auto; }
         
-        /* Login Overlay */
+        /* --- LOGIN OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); z-index: 1000;
+            background: rgba(255,255,255,0.95); z-index: 1000;
             display: flex; justify-content: center; align-items: center;
         }
-        .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 200px; margin-bottom: 10px; }
-        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .login-box { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; }
+        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; width: 250px; margin-bottom: 15px; font-size: 1rem; }
+        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         button:hover { background: #1e40af; }
         button.reject { background: #ef4444; }
         button.reject:hover { background: #dc2626; }
+        button.secondary { background: #64748b; }
+        button.secondary:hover { background: #475569; }
 
-        /* Dashboard */
-        h1 { margin-bottom: 1.5rem; color: #0f172a; }
-        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        /* --- TABS --- */
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { background: transparent; color: #64748b; font-size: 1.1rem; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; }
+        .tab-btn:hover { background: #e2e8f0; color: #0f172a; }
+        .tab-btn.active { background: #dbeafe; color: #2563eb; font-weight: bold; }
+
+        /* --- DASHBOARD CARDS --- */
+        h1 { margin-bottom: 0.5rem; }
+        .subtitle { color: #64748b; margin-bottom: 2rem; }
+        
+        .section-view { display: none; animation: fadeIn 0.3s; }
+        .section-view.active { display: block; }
+
+        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        
+        /* Layout Grid untuk Postingan */
+        .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .post-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .post-img { height: 180px; background: #f1f5f9; object-fit: cover; width: 100%; }
+        .post-body { padding: 1rem; flex-grow: 1; }
+        .post-title { font-weight: 700; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .post-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; }
+        .post-desc { font-size: 0.9rem; color: #334155; margin-bottom: 1rem; line-height: 1.4; }
+        .post-actions { padding: 1rem; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Layout Klaim */
         .claim-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem; }
-        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
         .badge.pending { background: #fef3c7; color: #d97706; }
         .badge.approved { background: #d1fae5; color: #059669; }
         .badge.rejected { background: #fee2e2; color: #dc2626; }
 
         .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1rem; }
         .answer-box { background: #f8fafc; padding: 1rem; border-radius: 8px; }
-        .answer-box h4 { margin-top: 0; color: #64748b; font-size: 0.9rem; }
         .answer-item { margin-bottom: 0.5rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem; }
-        .answer-item:last-child { border-bottom: none; }
         .label { font-weight: 600; font-size: 0.85rem; color: #475569; }
 
         .actions { display: flex; gap: 10px; justify-content: flex-end; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
         <div class="login-box">
-            <h2>Admin Login</h2>
-            <p>Masukkan password admin dari .env</p>
+            <h2> Admin Portal</h2>
+            <p style="color:#64748b; margin-bottom: 1rem;">Masukkan Password Admin</p>
             <input type="password" id="admin-pass" placeholder="Password Admin">
             <br>
-            <button onclick="login()">Masuk</button>
+            <button id="btn-login" onclick="login()">Masuk Dashboard</button>
         </div>
     </div>
 
     <div class="container" id="dashboard" style="display: none;">
-        <h1>🛡 Dashboard Verifikasi Klaim</h1>
-        <div id="claims-list">
-            <p>Memuat data...</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>🛡 Admin Control Panel</h1>
+                <p class="subtitle">Kelola laporan masuk dan verifikasi klaim barang.</p>
+            </div>
+            <button class="secondary" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('claims')">📋 Verifikasi Klaim</button>
+            <button class="tab-btn" onclick="switchTab('posts')">🖼 Moderasi Postingan</button>
+        </div>
+
+        <div id="view-claims" class="section-view active">
+            <div id="claims-list">
+                <p>Memuat data klaim...</p>
+            </div>
+        </div>
+
+        <div id="view-posts" class="section-view">
+            <div style="margin-bottom: 1rem; padding: 1rem; background: #dbeafe; border-radius: 8px; color: #1e40af; border: 1px solid #bfdbfe;">
+                <i class="fa-solid fa-info-circle"></i> <strong>Mode Moderasi:</strong> Postingan yang dihapus di sini akan hilang permanen dari database.
+            </div>
+            <div id="posts-list" class="posts-grid">
+                <p>Memuat daftar postingan...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Ganti URL ini sesuai backend Anda
-        const API_BASE = "https://project-sosio.vercel.app/api"; 
+        // --- KONFIGURASI API ---
+        // Backend berjalan di port 5000 (Local) atau URL Vercel
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                         ? 'http://localhost:5000/api' 
+                         : 'https://project-sosio.vercel.app/api';
+                         
         let ADMIN_TOKEN = "";
 
-        // Fungsi baru untuk membersihkan input dari potensi XSS
+        // Fungsi Escape HTML untuk mencegah XSS
         function escapeHTML(str) {
             if (!str) return '';
             return str.toString().replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[m];
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
             });
         }
 
+        // --- AUTH SYSTEM ---
+        async function login() {
+            const passInput = document.getElementById('admin-pass');
+            const btnLogin = document.getElementById('btn-login');
+            const pass = passInput.value;
 
-        function login() {
-            const pass = document.getElementById('admin-pass').value;
-            if(!pass) return alert("Masukkan password");
+            if(!pass) return alert("Harap masukkan password!");
+
+            // UI Loading
+            btnLogin.innerText = "Memverifikasi...";
+            btnLogin.disabled = true;
             
             ADMIN_TOKEN = pass;
-            // Coba fetch data untuk tes password
-            fetchClaims();
+
+            // Validasi dengan cara request ke endpoint yang diproteksi (GET /admin/claims)
+            try {
+                const res = await fetch(`${API_BASE}/admin/claims`, {
+                    method: 'GET',
+                    headers: { 'Authorization': ADMIN_TOKEN }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    alert("Password Salah! Akses ditolak.");
+                    btnLogin.innerText = "Masuk Dashboard";
+                    btnLogin.disabled = false;
+                    return;
+                }
+                
+                if (!res.ok) throw new Error("Gagal terhubung ke server.");
+
+                // Jika sukses (200 OK)
+                const json = await res.json();
+                
+                // Sembunyikan Login, Tampilkan Dashboard
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+                // Render data awal
+                renderClaims(json.data);
+                fetchPosts(); // Load tab sebelah di background
+
+            } catch (err) {
+                console.error(err);
+                alert(`Error: ${err.message}. Pastikan backend berjalan di port 5000.`);
+                btnLogin.innerText = "Masuk Dashboard";
+                btnLogin.disabled = false;
+            }
         }
 
+        function logout() {
+            location.reload(); // Refresh halaman untuk logout
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+            
+            if(tabName === 'claims') {
+                document.querySelector('button[onclick="switchTab(\'claims\')"]').classList.add('active');
+                document.getElementById('view-claims').classList.add('active');
+                fetchClaims(); // Refresh data terbaru
+            } else {
+                document.querySelector('button[onclick="switchTab(\'posts\')"]').classList.add('active');
+                document.getElementById('view-posts').classList.add('active');
+                fetchPosts(); // Refresh data terbaru
+            }
+        }
+
+        // --- FETCH DATA: CLAIMS ---
         async function fetchClaims() {
             try {
                 const res = await fetch(`${API_BASE}/admin/claims`, {
                     headers: { 'Authorization': ADMIN_TOKEN }
                 });
-
-                if (res.status === 401) {
-                    alert("Password Salah!");
-                    return;
+                if(res.ok) {
+                    const json = await res.json();
+                    renderClaims(json.data);
                 }
-                
-                if (!res.ok) {
-                    alert(`Gagal memuat klaim (${res.status}).`);
-                    return;
-                }
-
-                const json = await res.json();
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                renderClaims(json.data);
-
             } catch (err) {
-                alert("Gagal koneksi ke server. Pastikan backend berjalan.");
-                console.error(err);
+                console.error("Gagal load claims:", err);
             }
         }
 
@@ -120,75 +213,63 @@
             const container = document.getElementById('claims-list');
             container.innerHTML = '';
 
-            if(claims.length === 0) {
-                container.innerHTML = '<p>Belum ada klaim masuk.</p>';
+            if(!claims || claims.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:2rem; color:#64748b;">✅ Tidak ada klaim tertunda.</div>';
                 return;
             }
 
             claims.forEach(claim => {
-                // Gunakan optional chaining untuk keamanan
-                const reportId = claim.reportId;
-                if(!reportId) return; 
-
-                // Ambil Jawaban Benar (dari Penemu) dan Jawaban Klaim
-                const secrets = reportId.secrets || {};
+                const report = claim.reportId || {};
+                const secrets = report.secrets || {};
                 const answers = claim.answers || {};
                 
-                // Warna badge status
                 let badgeClass = 'pending';
                 if(claim.status === 'approved') badgeClass = 'approved';
                 if(claim.status === 'rejected') badgeClass = 'rejected';
+
+                let contactInfo = '';
+                if(claim.status === 'approved') {
+                    contactInfo = `<div style="margin-top:10px; padding:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:0.9rem; color:#15803d;">
+                        ✅ <strong>Selesai:</strong> Kontak penemu telah diberikan kepada pengklaim.
+                    </div>`;
+                }
 
                 const html = `
                 <div class="card">
                     <div class="claim-header">
                         <div>
-                            <h3>Barang: ${escapeHTML(reportId.title)}</h3>
-                            <p style="color:#64748b; font-size:0.9rem">Pengklaim: <strong>${escapeHTML(claim.name)}</strong> • Alasan: "${escapeHTML(claim.reason)}"</p>
+                            <h3>${escapeHTML(report.title || 'Barang Tidak Ditemukan (Terhapus)')}</h3>
+                            <p style="color:#64748b; font-size:0.9rem">
+                                Pengklaim: <strong>${escapeHTML(claim.name)}</strong> <br> 
+                                ID Klaim: <span style="font-family:monospace; background:#eee; padding:2px 5px; border-radius:4px;">${claim._id}</span>
+                            </p>
                         </div>
                         <div>
-                            <span class="badge ${badgeClass}">${escapeHTML(claim.status).toUpperCase()}</span>
+                            <span class="badge ${badgeClass}">${escapeHTML(claim.status)}</span>
                         </div>
                     </div>
 
                     <div class="comparison-grid">
                         <div class="answer-box">
                             <h4>JAWABAN PENGKLAIM</h4>
-                            <div class="answer-item">
-                                <div class="label">Ciri 1:</div>
-                                <div>${escapeHTML(answers.answer1 || '-')}</div>
-                            </div>
-                            <div class="answer-item">
-                                <div class="label">Ciri 2:</div>
-                                <div>${escapeHTML(answers.answer2 || '-')}</div>
-                            </div>
-                            <div class="answer-item">
-                                <div class="label">Ciri 3:</div>
-                                <div>${escapeHTML(answers.answer3 || '-')}</div>
-                            </div>
+                            <div class="answer-item"><div class="label">Ciri 1:</div> <div>${escapeHTML(answers.answer1 || '-')}</div></div>
+                            <div class="answer-item"><div class="label">Ciri 2:</div> <div>${escapeHTML(answers.answer2 || '-')}</div></div>
+                            <div class="answer-item"><div class="label">Ciri 3:</div> <div>${escapeHTML(answers.answer3 || '-')}</div></div>
                         </div>
 
-                        <div class="answer-box" style="border: 1px solid #2563eb;">
-                            <h4 style="color:#2563eb">KUNCI JAWABAN (Dari Penemu)</h4>
-                            <div class="answer-item">
-                                <div class="label">Rahasia 1:</div>
-                                <div>${escapeHTML(secrets.answer1 || '-')}</div>
-                            </div>
-                            <div class="answer-item">
-                                <div class="label">Rahasia 2:</div>
-                                <div>${escapeHTML(secrets.answer2 || '-')}</div>
-                            </div>
-                            <div class="answer-item">
-                                <div class="label">Rahasia 3:</div>
-                                <div>${escapeHTML(secrets.answer3 || '-')}</div>
-                            </div>
+                        <div class="answer-box" style="border: 1px solid #2563eb; background:#eff6ff;">
+                            <h4 style="color:#2563eb">KUNCI JAWABAN (Penemu)</h4>
+                            <div class="answer-item"><div class="label">Rahasia 1:</div> <div>${escapeHTML(secrets.answer1 || '-')}</div></div>
+                            <div class="answer-item"><div class="label">Rahasia 2:</div> <div>${escapeHTML(secrets.answer2 || '-')}</div></div>
+                            <div class="answer-item"><div class="label">Rahasia 3:</div> <div>${escapeHTML(secrets.answer3 || '-')}</div></div>
                         </div>
                     </div>
+                    ${contactInfo}
 
                     ${claim.status === 'pending' ? `
                     <div class="actions">
-                        <button class="reject" onclick="processClaim('${claim._id}', 'reject')">Tolak Klaim</button>
-                        <button onclick="processClaim('${claim._id}', 'approve')">✅ Setujui & Berikan Kontak</button>
+                        <button class="reject" onclick="processClaim('${claim._id}', 'reject')">❌ Tolak</button>
+                        <button onclick="processClaim('${claim._id}', 'approve')">✅ Valid - Setujui</button>
                     </div>
                     ` : ''}
                 </div>
@@ -209,15 +290,93 @@
                 const json = await res.json();
 
                 if (res.ok) {
-                    alert(`Klaim berhasil di${action === 'approve' ? 'setujui' : 'tolak'}!`);
-                    fetchClaims(); // Refresh data
+                    alert(`Sukses: Klaim ${action === 'approve' ? 'disetujui' : 'ditolak'}.`);
+                    fetchClaims();
                 } else {
-                    // Menampilkan pesan dari backend jika gagal
-                    alert(`Gagal memproses klaim (${res.status}): ${json.message || 'Terjadi kesalahan tidak diketahui.'}`);
+                    alert(`Gagal: ${json.message}`);
                 }
             } catch (err) {
-                alert("Error network: Gagal terhubung ke server.");
+                alert("Error network.");
+            }
+        }
+
+        // --- FETCH DATA: MODERASI POSTS ---
+        async function fetchPosts() {
+            const container = document.getElementById('posts-list');
+            try {
+                // Fetch public reports, tambahkan timestamp anti-cache
+                const res = await fetch(`${API_BASE}/reports?limit=100&t=${new Date().getTime()}`);
+                const json = await res.json();
+                const items = json.data || []; 
+                
+                renderPosts(items);
+            } catch (err) {
                 console.error(err);
+                container.innerHTML = '<p>Gagal memuat postingan.</p>';
+            }
+        }
+
+        function renderPosts(items) {
+            const container = document.getElementById('posts-list');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = '<p>Tidak ada postingan aktif.</p>';
+                return;
+            }
+
+            items.forEach(item => {
+                const imgUrl = (item.images && item.images.length > 0) ? item.images[0].url : 'https://placehold.co/400x300/e2e8f0/808080?text=No+Image';
+                
+                const html = `
+                <div class="post-card">
+                    <img src="${imgUrl}" class="post-img" alt="Barang">
+                    <div class="post-body">
+                        <div class="post-title">${escapeHTML(item.title)}</div>
+                        <div class="post-meta">
+                            <span class="badge" style="background:#f1f5f9; color:#475569;">${escapeHTML(item.category)}</span>
+                            • ${escapeHTML(item.location)}
+                        </div>
+                        <div class="post-desc">
+                            ${escapeHTML(item.description || '')}
+                            <br><br>
+                            <small style="color:#64748b">Penemu: ${escapeHTML(item.finderName || item.reporter || 'Anonim')}</small>
+                        </div>
+                    </div>
+                    <div class="post-actions">
+                        <div style="font-size:0.7rem; color:#cbd5e1;">ID: ${item._id}</div>
+                        <button class="reject" onclick="deletePost('${item._id}')" style="padding:6px 12px; font-size:0.8rem;">
+                            🗑 Hapus
+                        </button>
+                    </div>
+                </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        async function deletePost(id) {
+            const reason = prompt("Ketik 'HAPUS' untuk menghapus postingan ini secara permanen.");
+            if (reason !== 'HAPUS') return;
+
+            try {
+                const res = await fetch(`${API_BASE}/reports/${id}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': ADMIN_TOKEN,
+                        'Content-Type': 'application/json' 
+                    }
+                });
+
+                if (res.ok) {
+                    alert("Postingan berhasil dihapus.");
+                    fetchPosts(); // Refresh list
+                } else {
+                    const json = await res.json();
+                    alert(`Gagal menghapus: ${json.message}`);
+                }
+            } catch (err) {
+                alert("Gagal koneksi server.");
             }
         }
     </script>
