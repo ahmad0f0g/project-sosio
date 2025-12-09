@@ -107,27 +107,27 @@ textarea.form-control { resize: vertical; min-height: 100px; }
     .nav-links { 
         display: none; 
         /* Mulai penyesuaian Mobile Menu Overlay */
-        position: absolute; /* Atur posisi relatif terhadap viewport/header */
-        top: 60px; /* Jarak dari atas (asumsi tinggi header sekitar 60px) */
+        position: absolute; 
+        top: 60px; 
         left: 0;
         right: 0;
         background: var(--white);
         box-shadow: var(--shadow-lg);
-        flex-direction: column; /* Ubah item menjadi vertikal */
+        flex-direction: column; 
         padding: 0;
     }
     .nav-links.active {
-        display: flex; /* Tampilkan menu saat kelas .active ditambahkan oleh JS */
+        display: flex; 
     }
     .nav-links li {
         width: 100%;
-        border-top: 1px solid #f1f5f9; /* Garis pemisah antar menu */
+        border-top: 1px solid #f1f5f9; 
     }
     .nav-links li a {
-        padding: 12px 5%; /* Padding untuk item menu yang lebih besar */
+        padding: 12px 5%; 
         display: block;
         width: 100%;
-        color: var(--text-dark); /* Ubah warna agar lebih menonjol */
+        color: var(--text-dark); 
     }
     /* Sembunyikan tombol utama dari header di mobile */
     header .btn-primary {
@@ -142,5 +142,5 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 }
 /* Opsional: memastikan elemen yang aktif ditampilkan */
 .active-fields {
-    display: block; /* Ganti block jika Anda menggunakan display: flex atau grid */
+    display: block; 
 }
