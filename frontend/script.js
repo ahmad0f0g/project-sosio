@@ -331,8 +331,42 @@ async function handleClaimSubmit(e) {
 
         if (res.ok) {
             const json = await res.json();
-            alert(json.message || 'Klaim berhasil dikirim.');
+
+            // =======================================================
+            // 🔥 PERBAIKAN LOGIKA TAMPILKAN WHATSAPP PENEMU DI SINI
+            // =======================================================
+            // Asumsi API mengembalikan { isVerified: true, finderPhone: "628xxx", finderName: "Budi" }
+            if (json.isVerified && json.finderPhone) {
+                // Formatting nomor (optional, tapi disarankan)
+                let phone = json.finderPhone;
+                // Bersihkan dan pastikan format internasional (tanpa '+')
+                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                
+                // Jika dimulai dengan '62', tampilkan dengan '0' di alert
+                if (cleanPhone.startsWith('62')) {
+                    phone = '0' + cleanPhone.substring(2); 
+                } else if (cleanPhone.startsWith('8')) {
+                    phone = '0' + cleanPhone; 
+                } else {
+                    phone = cleanPhone;
+                }
+                
+                // 1. Tampilkan Alert Kontak
+                alert(`🎉 Klaim Barang Berhasil Dikonfirmasi! Silakan hubungi ${json.finderName || 'Penemu'} di nomor WhatsApp berikut untuk pengambilan: ${phone}`);
+                
+                // 2. Buka Link WhatsApp secara langsung
+                window.open(`https://wa.me/${cleanPhone}`, '_blank');
+                
+            } else {
+                // Klaim berhasil diajukan, tapi belum tentu diverifikasi langsung (tergantung backend)
+                 alert(json.message || 'Klaim berhasil diajukan. Menunggu konfirmasi verifikasi dari penemu.');
+            }
+            // =======================================================
+            // 🔥 AKHIR PERBAIKAN
+            // =======================================================
+
             closeModal();
+            // Refresh daftar agar status item mungkin berubah
             fetchAndRenderListing();
         } else {
             const err = await res.json().catch(()=>({message: res.statusText}));
@@ -385,9 +419,6 @@ function escapeHtml(str = '') {
       .replaceAll("'", '&#39;');
 }
 
-/* --- Hapus fungsi showContactInfo dan contactOwner karena fokus ke klaim via modal --- */
-// Fungsi ini tidak lagi relevan karena barang hanya 'found' dan perlu diverifikasi melalui klaim.
-
 /* ----------------------
    Attach global handlers that HTML expects
    ---------------------- */
@@ -400,7 +431,3 @@ window.handleClaimSubmit = handleClaimSubmit;
 window.setCategory = setCategory;
 window.filterItems = filterItems;
 window.toggleMobileMenu = toggleMobileMenu;
-
-// Pastikan fungsi yang dihapus tidak lagi terikat ke window
-// window.showContactInfo = showContactInfo; // Dihapus
-// window.contactOwner = contactOwner; // Dihapus
