@@ -1,26 +1,21 @@
 /* ------------------------------
-   TemuSini - script.js (API-ready - MODIFIKASI: HANYA FOUND/DITEMUKAN)
+   TemUIN - script.js (MODIFIKASI: Tanpa PIN + Modal Cek Klaim Baru)
    ------------------------------ */
 
 /* --- 0. CONFIG --- */
-// Set window.API_BASE sebelum memuat script.js di HTML, mis:
-// <script>window.API_BASE = "https://your-backend.com/api"</script>
-// Jika tidak diset, default ke same-origin /api
 const API_BASE = (window.API_BASE && window.API_BASE.replace(/\/+$/,'')) || (location.origin + '/api');
 
 // Local demo data (hanya menyertakan data 'found' untuk konsistensi)
 const itemsData = [
-    // Data yang asalnya 'lost' (id: 1) telah dihapus atau diubah
     { id: 2, type: 'found', title: 'iPhone 13 Pro', category: 'Elektronik', location: 'FST Lantai 2', date: '2024-01-20', img: 'https://placehold.co/400x300/333/white?text=iPhone', status: 'unclaimed', finder: 'Rizky (Ilkom)', desc: 'iPhone warna space gray dengan casing bening. Ditemukan di meja.' },
     { id: 3, type: 'found', title: 'Jam Tangan Emas', category: 'Aksesoris', location: "Kantin Ma'had", date: '2024-01-14', img: 'https://placehold.co/400x300/f59e0b/white?text=Jam+Tangan', status: 'pending', finder: 'Budi Santoso', desc: 'Jam tangan vintage tali kulit coklat.' }
 ];
 
 // State
 let currentFilter = 'all';
-let currentType = 'found'; // DEFAULT sekarang adalah 'found'
-let reportTypeVal = 'found'; // DEFAULT laporan sekarang adalah 'found'
+let currentType = 'found'; 
+let reportTypeVal = 'found'; 
 
-// Utility header for language (optional)
 const defaultLang = localStorage.getItem('lang') || 'id';
 const defaultHeaders = { 'Accept-Language': defaultLang };
 
@@ -42,17 +37,15 @@ function navTo(page) {
         document.getElementById('nav-home').classList.add('active');
         fetchAndRenderRecent();
     } 
-    // BLOK 'lost' DIHAPUS
     else if (page === 'found') {
         document.getElementById('listing').classList.add('active');
         document.getElementById('nav-found').classList.add('active');
         document.getElementById('listing-title').innerText = 'Barang Ditemukan';
-        currentType = 'found'; // Tetap 'found'
+        currentType = 'found'; 
         resetFilterUI();
         fetchAndRenderListing();
     } else if (page === 'report') {
         document.getElementById('report').classList.add('active');
-        // Pastikan toggleReportType di-trigger agar form 'found' tampil
         toggleReportType('found'); 
     }
     window.scrollTo(0,0);
@@ -68,14 +61,9 @@ function renderCards(items, containerId) {
 
     foundItems.forEach(item => {
         const itemId = item._id || item.id;
-        // Asumsi data reporter/finder dan phone sudah tersedia di objek item
-        const reporterName = item.finder || item.finderName || 'Anonim'; // Barang ditemukan, jadi yang ada adalah Finder/Penemu
-        const contactPhone = item.phone || ''; 
-
-        // Karena hanya ada tipe 'found', logika badge lebih sederhana
+        const reporterName = item.finder || item.finderName || 'Anonim'; 
         const badgeClass = item.status === 'pending' ? 'pending' : 'found';
         const badgeText = item.status === 'pending' ? 'Pending Verifikasi' : 'Ditemukan';
-        // Tombol selalu mengarah ke klaim barang yang ditemukan
         const btnText = item.status === 'pending' ? 'Proses...' : 'Klaim Barang';
         
         let btnAction = '';
@@ -84,8 +72,6 @@ function renderCards(items, containerId) {
         if (item.status === 'pending') {
              isDisabled = 'disabled';
         } else {
-            // Gunakan openClaimModal untuk klaim barang ditemukan
-            // Di sini kita kembali menggunakan modal klaim karena fokusnya adalah barang ditemukan (yang harus diklaim)
             btnAction = `onclick="openClaimModal('${escapeHtml(item.title)}', '${escapeHtml(reporterName)}', '${itemId}')"`;
         }
         
@@ -264,7 +250,7 @@ async function handleReportSubmit(e) {
 }
 
 /* ----------------------
-   CLAIM modal + submit
+   CLAIM modal + submit (Modal Klaim Item)
    ---------------------- */
 let currentClaimingId = null;
 
@@ -282,6 +268,8 @@ function closeModal() {
 
 window.onclick = function(event) {
     if (event.target === document.getElementById('claimModal')) closeModal();
+    // Tambahkan penutup untuk modal cek klaim
+    if (event.target === document.getElementById('checkClaimModal')) closeCheckClaimModal();
 }
 
 async function handleClaimSubmit(e) {
@@ -297,6 +285,7 @@ async function handleClaimSubmit(e) {
     const ans2 = ans2Input ? ans2Input.value.trim() : '';
     const ans3 = ans3Input ? ans3Input.value.trim() : '';
 
+    // Validasi input ciri rahasia
     if (!name || !ans1 || !ans2) {
         alert('Mohon isi nama dan minimal 2 jawaban ciri rahasia.');
         return;
@@ -323,13 +312,14 @@ async function handleClaimSubmit(e) {
                     secret2: ans2,
                     secret3: ans3
                 }
+                // PIN TIDAK DIKIRIMKAN DI SINI
             })
         });
 
         if (res.ok) {
             const json = await res.json();
             
-            // 🔥 LOGIKA BARU: HANYA MEMBERITAHU PENGGUNA UNTUK CEK DI MENU BARU
+            // LOGIKA BARU: Memberi tahu pengguna untuk CEK DI MENU BARU
             let message = json.message || 'Klaim berhasil diajukan.';
             
             if (json.isVerified) {
@@ -339,7 +329,6 @@ async function handleClaimSubmit(e) {
             }
             
             alert(message);
-            // 🔥 AKHIR LOGIKA BARU
 
             closeModal();
             fetchAndRenderListing();
@@ -354,21 +343,42 @@ async function handleClaimSubmit(e) {
 }
 
 
-/* ----------------------
-   NEW: CHECK CLAIMS STATUS
-   ---------------------- */
+/* ----------------------------------
+   NEW: CHECK CLAIMS STATUS (DENGAN MODAL KUSTOM)
+   ---------------------------------- */
 
-async function checkMyClaimsStatus() {
-    // Meminta ID Laporan atau Token Klaim
-    const claimId = prompt("Masukkan ID Laporan (Report ID) atau Token Klaim Anda untuk cek status dan mendapatkan kontak penemu:");
+// 1. Fungsi yang dipanggil dari navbar (membuka modal)
+function checkMyClaimsStatus() {
+    openCheckClaimModal();
+}
+
+function openCheckClaimModal() {
+    document.getElementById('checkClaimModal').classList.add('show');
+    // Bersihkan input
+    document.getElementById('input-claim-id-check').value = '';
+}
+
+function closeCheckClaimModal() {
+    document.getElementById('checkClaimModal').classList.remove('show');
+}
+
+
+// 2. Fungsi untuk menangani submission dari modal cek klaim
+async function handleCheckClaimSubmit(e) {
+    e.preventDefault();
     
-    if (!claimId || claimId.trim() === "") {
-        return alert("Cek status klaim dibatalkan.");
+    const inputElement = document.getElementById('input-claim-id-check');
+    const claimId = inputElement ? inputElement.value.trim() : '';
+    
+    if (!claimId) {
+        return alert("Mohon masukkan ID Laporan atau Token Klaim.");
     }
+
+    closeCheckClaimModal(); // Tutup modal saat proses dimulai
     
     // Asumsi endpoint API adalah /claims/check?id=...
     try {
-        const res = await fetch(`${API_BASE}/claims/check?id=${encodeURIComponent(claimId.trim())}`, {
+        const res = await fetch(`${API_BASE}/claims/check?id=${encodeURIComponent(claimId)}`, {
             method: 'GET',
             headers: defaultHeaders
         });
@@ -376,7 +386,6 @@ async function checkMyClaimsStatus() {
         if (res.ok) {
             const json = await res.json();
             
-            // Asumsi API mengembalikan { status: "confirmed", finderPhone: "628xxx", finderName: "Budi" }
             if (json.status === 'confirmed' && json.finderPhone) {
                 // Logika penampilan dan formatting kontak
                 let phone = json.finderPhone;
@@ -464,3 +473,5 @@ window.toggleMobileMenu = toggleMobileMenu;
 
 // Daftarkan fungsi baru
 window.checkMyClaimsStatus = checkMyClaimsStatus;
+window.closeCheckClaimModal = closeCheckClaimModal;
+window.handleCheckClaimSubmit = handleCheckClaimSubmit;
