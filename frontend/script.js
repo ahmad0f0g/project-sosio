@@ -1,5 +1,5 @@
 /* ------------------------------
-   TemUIN - script.js (MODIFIKASI: Tanpa PIN + Modal Cek Klaim Baru)
+   TemUIN - script.js (MODIFIKASI: Implementasi Modal Notifikasi Kustom & Fix Sensor WA)
    ------------------------------ */
 
 /* --- 0. CONFIG --- */
@@ -189,7 +189,7 @@ async function handleReportSubmit(e) {
     const date = document.getElementById('input-date' + typeSuffix).value;
     const location = document.getElementById('input-location' + typeSuffix).value.trim();
     const desc = document.getElementById('input-desc' + typeSuffix).value.trim();
-    const phone = document.getElementById('input-phone' + typeSuffix).value.trim();
+    const phone = document.getElementById('input-phone-found').value.trim(); 
     const reporter = document.getElementById('input-reporter').value.trim();
     const imageInput = document.getElementById('input-image');
     const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
@@ -202,11 +202,11 @@ async function handleReportSubmit(e) {
    
         
     if (!secret1 || !secret2) {
-        alert('Mohon isi Ciri Rahasia 1 dan 2 untuk verifikasi klaim.');
+        showNotification('Gagal!', 'Mohon isi Ciri Rahasia 1 dan 2 untuk verifikasi klaim.', 'warning');
         return;
     }
     if (!title || !location || !date || !phone || !reporter) {
-        alert('Mohon isi semua field wajib.');
+        showNotification('Gagal!', 'Mohon isi semua field wajib.', 'warning');
         return;
     }
 
@@ -235,17 +235,17 @@ async function handleReportSubmit(e) {
         
         if (res.ok) {
              const json = await res.json();
-             alert(json.message || 'Laporan berhasil dibuat.');
+             showNotification('Berhasil!', json.message || 'Laporan berhasil dibuat.', 'success');
              document.querySelector('#report form').reset();
              navTo('found');
              fetchAndRenderListing();
         } else {
              const err = await res.json().catch(()=>({ message: 'Unknown error' }));
-             alert('Gagal mengirim laporan: ' + (err.message || res.statusText));
+             showNotification('Gagal!', 'Gagal mengirim laporan: ' + (err.message || res.statusText), 'error');
         }
     } catch (err) {
         console.error('Error', err);
-        alert('Gagal mengirim laporan (network).');
+        showNotification('Error Jaringan!', 'Gagal mengirim laporan (network).', 'error');
     }
 }
 
@@ -270,6 +270,7 @@ window.onclick = function(event) {
     if (event.target === document.getElementById('claimModal')) closeModal();
     // Tambahkan penutup untuk modal cek klaim
     if (event.target === document.getElementById('checkClaimModal')) closeCheckClaimModal();
+    if (event.target === document.getElementById('notificationModal')) closeNotificationModal();
 }
 
 async function handleClaimSubmit(e) {
@@ -287,12 +288,12 @@ async function handleClaimSubmit(e) {
 
     // Validasi input ciri rahasia
     if (!name || !ans1 || !ans2) {
-        alert('Mohon isi nama dan minimal 2 jawaban ciri rahasia.');
+        showNotification('Gagal Klaim!', 'Mohon isi nama dan minimal 2 jawaban ciri rahasia.', 'warning');
         return;
     }
 
     if (!currentClaimingId) {
-        alert('Item ID tidak ditemukan.');
+        showNotification('Error!', 'Item ID tidak ditemukan.', 'error');
         return;
     }
 
@@ -320,26 +321,23 @@ async function handleClaimSubmit(e) {
             const json = await res.json();
             
             // LOGIKA BARU: Memberi tahu pengguna untuk CEK DI MENU BARU
-            let message = json.message || 'Klaim berhasil diajukan.';
             
             if (json.claimToken) {
                 // Tampilkan TOKEN dengan jelas agar user menyalinnya
-                alert(`✅ KLAIM BERHASIL DIAJUKAN!\n\nMohon CATAT/SCREENSHOT Token ini untuk cek status:\n👉 ${json.claimToken}\n\n(Gunakan token ini di menu 'Cek Klaim Saya')`);
+                showNotification('Klaim Diajukan!', 'Klaim berhasil diajukan.\nMohon CATAT/SCREENSHOT Token ini untuk cek status:\n👉 <b>' + json.claimToken + '</b>\n\n(Gunakan token ini di menu Cek Klaim Saya)', 'success', () => navTo('found'));
             } else {
-                alert(json.message || 'Klaim berhasil diajukan.');
+                showNotification('Klaim Diajukan!', json.message || 'Klaim berhasil diajukan.', 'success', () => navTo('found'));
             }
             
-            alert(message);
-
             closeModal();
             fetchAndRenderListing();
         } else {
             const err = await res.json().catch(()=>({message: res.statusText}));
-            alert('Gagal mengirim klaim: ' + (err.message || res.statusText));
+            showNotification('Gagal Klaim!', 'Gagal mengirim klaim: ' + (err.message || res.statusText), 'error');
         }
     } catch (err) {
         console.error('claim submit error', err);
-        alert('Gagal kirim klaim (network).');
+        showNotification('Error Jaringan!', 'Gagal kirim klaim (network).', 'error');
     }
 }
 
@@ -372,12 +370,9 @@ async function handleCheckClaimSubmit(e) {
     const claimId = inputElement ? inputElement.value.trim() : '';
     
     if (!claimId) {
-        return alert("Mohon masukkan ID Laporan atau Token Klaim.");
+        return showNotification('Error!', 'Mohon masukkan ID Laporan atau Token Klaim.', 'warning');
     }
 
-    closeCheckClaimModal(); // Tutup modal saat proses dimulai
-    
-    // Asumsi endpoint API adalah /claims/check?id=...
     try {
         const res = await fetch(`${API_BASE}/claims/check?id=${encodeURIComponent(claimId)}`, {
             method: 'GET',
@@ -387,38 +382,107 @@ async function handleCheckClaimSubmit(e) {
         if (res.ok) {
             const json = await res.json();
             
-            if (json.status === 'confirmed' && json.finderPhone) {
-                // Logika penampilan dan formatting kontak
-                let phone = json.finderPhone;
-                const cleanPhone = phone.replace(/[^0-9]/g, '');
+            // PASTIKAN DATA DARI API DIKEMBALIKAN DALAM OBJEK 'data'
+            const { status, finderPhone, finderName, itemTitle } = json.data || json;
+            let message = '';
+
+            closeCheckClaimModal(); 
+
+            if (status === 'confirmed' && finderPhone) {
+                
+                // Sanitasi dan format nomor telepon
+                const cleanPhone = finderPhone.replace(/[^0-9]/g, '');
+                let formattedPhone = cleanPhone;
                 
                 if (cleanPhone.startsWith('62')) {
-                    phone = '0' + cleanPhone.substring(2); 
+                    formattedPhone = '0' + cleanPhone.substring(2); 
                 } else if (cleanPhone.startsWith('8')) {
-                    phone = '0' + cleanPhone; 
+                    formattedPhone = '0' + cleanPhone; 
                 } else {
-                    phone = cleanPhone;
+                    formattedPhone = cleanPhone;
                 }
+
+                // Tampilkan pesan sukses dan kontak
+                message = `🎉 SELAMAT! Klaim Anda untuk ${itemTitle || 'barang ini'} telah diverifikasi dan disetujui.\n\n`;
+                message += `Silakan hubungi Penemu (${finderName || 'Anonim'}) di kontak berikut untuk berkoordinasi pengambilan:\n\n`;
+                // FIX SENSOR: Menggunakan variabel formattedPhone
+               message += `Nomor WhatsApp: ${formattedPhone}\n\n`;
+                // Permintaan: TIDAK ADA PENGARAHAN KE WHATSAPP (baris dihapus)
                 
-                // Tampilkan Kontak
-                alert(`🎉 Klaim Dikonfirmasi! Silakan hubungi ${json.finderName || 'Penemu'} di nomor WhatsApp berikut untuk pengambilan: ${phone}`);
+                // Ganti alert dengan modal kustom, action: TUTUP (null)
+                showNotification('Klaim Dikonfirmasi!', message, 'success', null); 
                 
-                // Buka Link WhatsApp
-                window.open(`https://wa.me/${cleanPhone}`, '_blank');
+            } else if (status === 'pending') {
+                message = `⏳ Status klaim untuk ${itemTitle || 'barang ini'} saat ini adalah **PENDING (Menunggu Verifikasi)**.\n\nAdmin atau Penemu sedang meninjau jawaban ciri rahasia Anda. Silakan cek kembali dalam waktu 1x24 jam.`;
+                showNotification('Status Pending!', message, 'warning');
+                
+            } else if (status === 'rejected') {
+                message = `❌ Status klaim untuk ${itemTitle || 'barang ini'} adalah **DITOLAK**.\n\nJawaban ciri rahasia yang Anda berikan tidak sesuai. Jika ini adalah barang Anda, silakan hubungi admin atau coba laporkan kembali dengan ciri-ciri yang lebih akurat.`;
+                showNotification('Klaim Ditolak!', message, 'error');
                 
             } else {
-                alert(json.message || `Status Klaim: ${json.status || 'Pending'}. Silakan coba lagi nanti.`);
+                 showNotification('Error!', json.message || `Status Klaim: ${status || 'Pending'}. Silakan coba lagi nanti.`, 'error');
             }
         } else {
+            closeCheckClaimModal(); 
             const err = await res.json().catch(()=>({message: res.statusText}));
-            alert('Gagal cek status klaim: ' + (err.message || res.statusText));
+            showNotification('Error!', 'Gagal cek status klaim: ' + (err.message || res.statusText), 'error');
         }
     } catch (err) {
+        closeCheckClaimModal();
         console.error('Error checking claim status', err);
-        alert('Gagal cek status klaim (network error).');
+        showNotification('Error Jaringan!', 'Gagal cek status klaim (network error).', 'error');
     }
 }
 
+
+/* ----------------------------------
+   NEW: UNIVERSAL NOTIFICATION MODAL
+   ---------------------------------- */
+function showNotification(title, message, type = 'info', action = null) {
+    const modal = document.getElementById('notificationModal');
+    const iconDiv = document.getElementById('notification-icon');
+    const titleEl = document.getElementById('notification-title');
+    const messageEl = document.getElementById('notification-message');
+    const buttonEl = document.getElementById('notification-button');
+    
+    // Set Title and Message
+    titleEl.innerText = title;
+    messageEl.innerHTML = message.replaceAll('\n', '<br>'); // Handle line breaks
+    
+    // Set Icon and Color based on type
+    iconDiv.className = 'notification-icon'; // Reset classes
+    
+    if (type === 'success') {
+        iconDiv.classList.add('success');
+        iconDiv.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+    } else if (type === 'error') {
+        iconDiv.classList.add('error');
+        iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+    } else if (type === 'warning') {
+        iconDiv.classList.add('warning');
+        iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    } else { // info
+        iconDiv.classList.add('info');
+        iconDiv.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+    }
+
+    // Set Button Action
+    buttonEl.innerText = 'Tutup'; // Reset teks tombol
+    buttonEl.onclick = closeNotificationModal; 
+    if (action && typeof action === 'function') {
+        buttonEl.onclick = () => {
+            closeNotificationModal();
+            action();
+        };
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.remove('show');
+}
 
 /* ----------------------
    HELPERS
@@ -472,7 +536,9 @@ window.setCategory = setCategory;
 window.filterItems = filterItems;
 window.toggleMobileMenu = toggleMobileMenu;
 
-// Daftarkan fungsi baru
+// Daftarkan fungsi baru (termasuk notification modal)
 window.checkMyClaimsStatus = checkMyClaimsStatus;
 window.closeCheckClaimModal = closeCheckClaimModal;
 window.handleCheckClaimSubmit = handleCheckClaimSubmit;
+window.showNotification = showNotification; 
+window.closeNotificationModal = closeNotificationModal;

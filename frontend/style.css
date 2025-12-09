@@ -132,6 +132,30 @@ textarea.form-control { resize: vertical; min-height: 100px; }
     .menu-toggle { display: block; }
     .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* --- NOTIFICATION MODAL STYLES --- */
+.modal-content.small-modal {
+    max-width: 380px;
+    text-align: center;
+    padding-top: 3rem; 
+}
+.notification-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+.notification-icon.success {
+    color: var(--accent-green);
+}
+.notification-icon.error {
+    color: var(--accent-red);
+}
+.notification-icon.warning {
+    color: var(--accent-yellow);
+}
+.text-center {
+    text-align: center;
+}
+
 /* Pastikan elemen dengan kelas ini disembunyikan */
 .hidden-fields {
     display: none !important; 

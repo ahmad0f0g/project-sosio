@@ -213,6 +213,15 @@
             </form>
         </div>
     </div>
+    <div id="notificationModal" class="modal">
+    <div class="modal-content small-modal">
+        <span class="close-modal" onclick="closeNotificationModal()">&times;</span>
+        <div id="notification-icon" class="notification-icon"></div>
+        <h3 id="notification-title">Notifikasi</h3>
+        <p id="notification-message" class="modal-subtitle text-center"></p>
+        <button id="notification-button" class="btn-primary full-width" onclick="closeNotificationModal()">Tutup</button>
+    </div>
+</div>
     <script>window.API_BASE = "https://project-sosio.vercel.app/api";</script>
     <script src="script.js"></script>
 </body>
