@@ -1,11 +1,11 @@
 import Report from "../models/Report.js";
-import cloudinary from "../config/cloudinary.js"; // Pastikan path ../config/cloudinary.js benar
+import cloudinary from "../config/cloudinary.js"; 
 
-// Helper function: Upload stream dengan Promise
+// Helper: Upload buffer ke Cloudinary (Wajib untuk Vercel)
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: "lostfound" },
+      { folder: "temuin_uploads" },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -15,14 +15,18 @@ const uploadToCloudinary = (buffer) => {
   });
 };
 
-// CREATE REPORT
 export const createReport = async (req, res) => {
   try {
-    // 1. Ambil data 'type' juga (lost/found)
-    const { title, description, category, location, type, phone, reporter, date, secret1, secret2, secret3 } = req.body;
+    // 1. Ambil data dari FormData frontend
+    const { 
+      title, description, category, location, 
+      type, phone, reporter, date, 
+      secret1, secret2, secret3 // Ini nama field dari script.js
+    } = req.body;
 
     let uploadedImages = [];
 
+    // 2. Proses Upload Gambar (Buffer -> Cloudinary)
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map((file) => uploadToCloudinary(file.buffer));
       const results = await Promise.all(uploadPromises);
@@ -33,22 +37,24 @@ export const createReport = async (req, res) => {
       }));
     }
 
-    // 2. Simpan dengan field type
+    // 3. Simpan ke Database
     const report = await Report.create({
       title,
       description,
       category,
       location,
-      type: type || 'lost', // Default ke 'lost' jika kosong
+      type: type || 'found',
       phone, 
       images: uploadedImages,
       finderName: reporter, 
       dateFound: date,
+      status: 'pending',
       
+      // Mapping Kunci Jawaban
       secrets: {
         answer1: secret1,
         answer2: secret2,
-        answer3: secret3
+        answer3: secret3 || ""
       }
     });
 
@@ -62,56 +68,36 @@ export const createReport = async (req, res) => {
   }
 };
 
-// GET ALL REPORTS (Dengan Fitur Filter)
 export const getReports = async (req, res) => {
   try {
-    // Ambil query params dari URL (dikirim oleh frontend)
     const { type, category, search, limit } = req.query;
+    let query = { status: { $ne: 'finished' } }; 
 
-    let query = {};
-
-    // Filter berdasarkan Tipe (Lost / Found)
-    if (type && type !== 'all') {
-      query.type = type;
-    }
-
-    // Filter berdasarkan Kategori
-    if (category && category !== 'all') {
-      query.category = category;
-    }
-
-    // Fitur Search (Mencari di Judul atau Lokasi)
+    if (type && type !== 'all') query.type = type;
+    if (category && category !== 'all') query.category = category;
     if (search) {
       query.$or = [
-        { title: { $regex: search, $options: "i" } },    // Case-insensitive
+        { title: { $regex: search, $options: "i" } },
         { location: { $regex: search, $options: "i" } }
       ];
     }
 
-    // Query ke database
-    let reportsQuery = Report.find(query).sort({ createdAt: -1 });
+    // Sembunyikan 'secrets' agar tidak bisa diintip via Inspect Element
+    let reportsQuery = Report.find(query).select('-secrets').sort({ createdAt: -1 });
 
-    // Batasi jumlah jika ada parameter limit (misal untuk homepage)
-    if (limit) {
-      reportsQuery = reportsQuery.limit(parseInt(limit));
-    }
+    if (limit) reportsQuery = reportsQuery.limit(parseInt(limit));
 
     const reports = await reportsQuery;
     res.json({ data: reports });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// GET SINGLE REPORT
 export const getReportById = async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id);
-    if (!report) {
-      return res.status(404).json({ message: req.t("REPORT_NOT_FOUND") });
-    }
-
+    const report = await Report.findById(req.params.id).select('-secrets');
+    if (!report) return res.status(404).json({ message: req.t("REPORT_NOT_FOUND") });
     res.json({ data: report });
   } catch (error) {
     res.status(500).json({ message: error.message });
