@@ -11,7 +11,7 @@ const claimSchema = new mongoose.Schema(
     reason: { type: String, required: true },
     status: { type: String, default: "pending" },
 
-    pin: { type: String, required: true },
+    claimToken: { type: String, required: true, unique: true },
 
     answers: {
       answer1: { type: String }, // Jawaban tebakan dari pengklaim

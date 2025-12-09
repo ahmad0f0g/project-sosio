@@ -1,12 +1,11 @@
 import Claim from "../models/Claim.js";
 import Report from "../models/Report.js";
+import { v4 as uuidv4 } from "uuid";
 
+// 1. CREATE CLAIM
 export const createClaim = async (req, res) => {
   try {
-    // Frontend mengirim JSON: { answers: { secret1: "...", ... } }
-    const { reportId, name, reason, answers, pin } = req.body;
-
-    if(!pin) return res.status(400).json({message: "Wajib membuat PIN keamanan!"});
+    const { reportId, name, reason, answers } = req.body;
 
     const report = await Report.findById(reportId);
     if (!report) return res.status(404).json({ message: "Barang tidak ditemukan." });
@@ -15,12 +14,14 @@ export const createClaim = async (req, res) => {
     const existing = await Claim.findOne({ reportId, name, status: 'pending' });
     if(existing) return res.status(400).json({ message: "Klaim sedang diproses." });
 
+    // --- FIX 1: KITA BUAT TOKENNYA DULU DI SINI ---
+    const token = uuidv4().split('-')[0].toUpperCase();
+
     const claim = await Claim.create({
       reportId,
       name,
       reason,
-      pin,
-      // Mapping jawaban penebak
+      claimToken: token, // Sekarang variabel 'token' sudah ada isinya
       answers: {
         answer1: answers?.secret1 || "-",
         answer2: answers?.secret2 || "-",
@@ -28,62 +29,60 @@ export const createClaim = async (req, res) => {
       }
     });
 
-    // Update status report jadi 'pending' (ada aktivitas)
+    // Update status report jadi 'pending'
     await Report.findByIdAndUpdate(reportId, { 
         status: 'pending',
         $inc: { claimCount: 1 } 
     });
 
-    res.json({ message: req.t("CLAIM_SUBMITTED"), data: claim });
+    res.json({ 
+      message: req.t("CLAIM_SUBMITTED"), 
+      data: claim, 
+      claimToken: token
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ... (kode createClaim yang sudah ada)
-
-// GET CLAIM STATUS (Cek status klaim public)
+// 2. GET CLAIM STATUS
 export const getClaimStatus = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { pin } = req.query;
+    // --- FIX 2: GUNAKAN req.query BUKAN req.params ---
+    // Karena URL frontendnya: /api/claims/check?id=TOKEN
+    const { id } = req.query; 
+    
+    if (!id) return res.status(400).json({ message: "Token klaim diperlukan." });
 
-    // Cari klaim dan ambil data report terkait (termasuk phone)
-    const claim = await Claim.findById(id).populate("reportId", "phone finderName title");
+    const claim = await Claim.findOne({ claimToken: id }).populate("reportId", "title finderName phone");
 
     if (!claim) {
-      return res.status(404).json({ message: "Data klaim tidak ditemukan." });
+      return res.status(404).json({ message: "Token klaim tidak valid." });
     }
 
-    if (claim.pin !== pin) {
-        return res.status(403).json({ 
-            status: "forbidden", 
-            message: "PIN Salah! Anda tidak berhak melihat data ini." 
-        });
-    }
+    // --- FIX 3: RAPIKAN LOGIKA RESPON ---
+    // Jangan lakukan assignment aneh di dalam res.json
+    
+    let responseData = {
+      status: claim.status, 
+      itemTitle: claim.reportId.title,
+      finderName: claim.reportId.finderName || "Penemu",
+      message: ""
+    };
 
-    // LOGIKA PENTING: Hanya kirim No HP jika status APPROVED
     if (claim.status === "approved") {
-      res.json({
-        status: "approved",
-        itemTitle: claim.reportId.title,
-        finderName: claim.reportId.finderName,
-        contactPhone: claim.reportId.phone, // INI YANG DICARI
-        message: "Selamat! Klaim disetujui. Silakan hubungi penemu."
-      });
+      // Logic khusus agar Frontend bisa baca "confirmed"
+      responseData.status = "confirmed"; 
+      responseData.finderPhone = claim.reportId.phone; // Masukkan No HP
+      responseData.message = "Selamat! Klaim disetujui. Silakan hubungi penemu.";
     } else if (claim.status === "rejected") {
-      res.json({
-        status: "rejected",
-        itemTitle: claim.reportId.title,
-        message: "Maaf, klaim Anda ditolak karena jawaban tidak sesuai."
-      });
+      responseData.message = "Maaf, klaim Anda ditolak karena jawaban tidak sesuai.";
     } else {
-      res.json({
-        status: "pending",
-        itemTitle: claim.reportId.title,
-        message: "Klaim masih menunggu verifikasi admin."
-      });
+      responseData.message = "Klaim masih menunggu verifikasi admin.";
     }
+
+    // Kirim data yang sudah rapi
+    res.json(responseData);
 
   } catch (error) {
     res.status(500).json({ message: error.message });
