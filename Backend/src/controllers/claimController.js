@@ -14,14 +14,13 @@ export const createClaim = async (req, res) => {
     const existing = await Claim.findOne({ reportId, name, status: 'pending' });
     if(existing) return res.status(400).json({ message: "Klaim sedang diproses." });
 
-    // --- FIX 1: KITA BUAT TOKENNYA DULU DI SINI ---
     const token = uuidv4().split('-')[0].toUpperCase();
 
     const claim = await Claim.create({
       reportId,
       name,
       reason,
-      claimToken: token, // Sekarang variabel 'token' sudah ada isinya
+      claimToken: token, 
       answers: {
         answer1: answers?.secret1 || "-",
         answer2: answers?.secret2 || "-",
@@ -29,7 +28,6 @@ export const createClaim = async (req, res) => {
       }
     });
 
-    // Update status report jadi 'pending'
     await Report.findByIdAndUpdate(reportId, { 
         status: 'pending',
         $inc: { claimCount: 1 } 
@@ -45,11 +43,9 @@ export const createClaim = async (req, res) => {
   }
 };
 
-// 2. GET CLAIM STATUS
 export const getClaimStatus = async (req, res) => {
   try {
-    // --- FIX 2: GUNAKAN req.query BUKAN req.params ---
-    // Karena URL frontendnya: /api/claims/check?id=TOKEN
+    
     const { id } = req.query; 
     
     if (!id) return res.status(400).json({ message: "Token klaim diperlukan." });
@@ -59,9 +55,6 @@ export const getClaimStatus = async (req, res) => {
     if (!claim) {
       return res.status(404).json({ message: "Token klaim tidak valid." });
     }
-
-    // --- FIX 3: RAPIKAN LOGIKA RESPON ---
-    // Jangan lakukan assignment aneh di dalam res.json
     
     let responseData = {
       status: claim.status, 
@@ -71,9 +64,8 @@ export const getClaimStatus = async (req, res) => {
     };
 
     if (claim.status === "approved") {
-      // Logic khusus agar Frontend bisa baca "confirmed"
       responseData.status = "confirmed"; 
-      responseData.finderPhone = claim.reportId.phone; // Masukkan No HP
+      responseData.finderPhone = claim.reportId.phone; 
       responseData.message = "Selamat! Klaim disetujui. Silakan hubungi penemu.";
     } else if (claim.status === "rejected") {
       responseData.message = "Maaf, klaim Anda ditolak karena jawaban tidak sesuai.";
@@ -81,7 +73,6 @@ export const getClaimStatus = async (req, res) => {
       responseData.message = "Klaim masih menunggu verifikasi admin.";
     }
 
-    // Kirim data yang sudah rapi
     res.json(responseData);
 
   } catch (error) {

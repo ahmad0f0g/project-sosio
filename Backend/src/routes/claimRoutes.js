@@ -3,7 +3,6 @@ import { createClaim, getClaimStatus } from "../controllers/claimController.js";
 
 const router = express.Router();
 
-// Create claim
 router.post("/", createClaim);
 router.get("/check", getClaimStatus);
 

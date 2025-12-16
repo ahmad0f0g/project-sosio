@@ -1,8 +1,3 @@
-/* ------------------------------
-   TemUIN - script.js (MODIFIKASI: Implementasi Modal Notifikasi Kustom & Fix Sensor WA)
-   ------------------------------ */
-
-/* --- 0. CONFIG --- */
 const API_BASE = (window.API_BASE && window.API_BASE.replace(/\/+$/,'')) || (location.origin + '/api');
 
 // Local demo data (hanya menyertakan data 'found' untuk konsistensi)

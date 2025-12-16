@@ -2,7 +2,6 @@ import Report from "../models/Report.js";
 import Claim from "../models/Claim.js";
 import cloudinary from "../config/cloudinary.js"; 
 
-// Helper: Upload buffer ke Cloudinary (Wajib untuk Vercel)
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -18,16 +17,14 @@ const uploadToCloudinary = (buffer) => {
 
 export const createReport = async (req, res) => {
   try {
-    // 1. Ambil data dari FormData frontend
     const { 
       title, description, category, location, 
       type, phone, reporter, date, 
-      secret1, secret2, secret3 // Ini nama field dari script.js
+      secret1, secret2, secret3 
     } = req.body;
 
     let uploadedImages = [];
 
-    // 2. Proses Upload Gambar (Buffer -> Cloudinary)
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map((file) => uploadToCloudinary(file.buffer));
       const results = await Promise.all(uploadPromises);
@@ -38,7 +35,6 @@ export const createReport = async (req, res) => {
       }));
     }
 
-    // 3. Simpan ke Database
     const report = await Report.create({
       title,
       description,
@@ -51,7 +47,6 @@ export const createReport = async (req, res) => {
       dateFound: date,
       status: 'unclaimed',
       
-      // Mapping Kunci Jawaban
       secrets: {
         answer1: secret1,
         answer2: secret2,
@@ -83,7 +78,6 @@ export const getReports = async (req, res) => {
       ];
     }
 
-    // Sembunyikan 'secrets' agar tidak bisa diintip via Inspect Element
     let reportsQuery = Report.find(query).select('-secrets').sort({ createdAt: -1 });
 
     if (limit) reportsQuery = reportsQuery.limit(parseInt(limit));
@@ -107,14 +101,12 @@ export const getReportById = async (req, res) => {
 
 export const deleteReport = async (req, res) => {
   try {
-    // 1. Cek Otorisasi Admin (Sama seperti di adminController)
     if (req.headers.authorization !== process.env.ADMIN_PASSWORD) {
       return res.status(401).json({ message: "Unauthorized: Password Admin Salah" });
     }
 
     const { id } = req.params;
     
-    // 2. Cari dan Hapus Report
     const report = await Report.findByIdAndDelete(id);
 
     if (!report) {

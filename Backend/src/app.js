@@ -9,17 +9,14 @@ import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
-// Middleware global
 app.use(cors());
 app.use(express.json());
 app.use(language);
 
-// Routes
 app.use("/api/reports", reportRoutes);
 app.use("/api/claims", claimRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Error handler (paling bawah)
 app.use(errorHandler);
 
 export default app;

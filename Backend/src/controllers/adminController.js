@@ -21,7 +21,6 @@ export const approveClaim = async (req, res) => {
     const claim = await Claim.findByIdAndUpdate(req.params.id, { status: "approved" }, { new: true });
     if (!claim) return res.status(404).json({ message: "Claim not found" });
 
-    // Tandai barang selesai (sudah diambil)
     await Report.findByIdAndUpdate(claim.reportId, { status: "finished" });
 
     res.json({ message: req.t("CLAIM_APPROVED"), data: claim });
