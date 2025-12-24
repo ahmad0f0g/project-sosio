@@ -183,7 +183,7 @@ async function handleReportSubmit(e) {
     const category = document.getElementById('input-category' + typeSuffix).value;
     const date = document.getElementById('input-date' + typeSuffix).value;
     const location = document.getElementById('input-location' + typeSuffix).value.trim();
-    const desc = document.getElementById('input-desc' + typeSuffix).value.trim();
+    const desc ="";
     const phone = document.getElementById('input-phone-found').value.trim(); 
     const reporter = document.getElementById('input-reporter').value.trim();
     const imageInput = document.getElementById('input-image');
