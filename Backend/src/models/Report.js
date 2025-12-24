@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const reportSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String },
     type: { type: String, enum: ["lost", "found"], default: "found" }, 
     category: { type: String, required: true },
     location: { type: String, required: true },
